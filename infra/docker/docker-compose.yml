@@ -1,0 +1,43 @@
+version: "3.9"
+
+services:
+  redis:
+    image: redis:7-alpine
+    container_name: predarb-redis
+    ports:
+      - "6379:6379"
+    command: ["redis-server", "--appendonly", "no"]
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  # Uncomment to run backend & worker in containers for local dev
+  # api:
+  #   build:
+  #     context: ..
+  #     dockerfile: backend/Dockerfile
+  #   env_file:
+  #     - ../../.env
+  #   environment:
+  #     - REDIS_URL=redis://redis:6379/0
+  #   ports:
+  #     - "8000:8000"
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+
+  # worker:
+  #   build:
+  #     context: ..
+  #     dockerfile: backend/Dockerfile
+  #   command: ["celery", "-A", "app.celery_app.app", "worker", "-l", "info"]
+  #   env_file:
+  #     - ../../.env
+  #   environment:
+  #     - REDIS_URL=redis://redis:6379/0
+  #   depends_on:
+  #     redis:
+  #       condition: service_healthy
+

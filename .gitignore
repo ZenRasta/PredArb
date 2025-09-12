@@ -1,0 +1,30 @@
+# Python
+__pycache__/
+*.pyc
+.venv/
+.env
+
+# Node
+node_modules/
+dist/
+.build/
+
+# Local dev logs
+.logs/
+*.pid
+*.out
+
+# Python build metadata
+*.egg-info/
+backend/celerybeat-schedule.db
+
+# Local env files
+.env.local
+**/.env.local
+
+# Docker
+*.local.yml
+
+# Editors
+.vscode/
+.idea/
