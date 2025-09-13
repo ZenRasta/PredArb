@@ -11,3 +11,4 @@ redis==5.0.8
 celery==5.4.0
 rapidfuzz==3.9.6
 sentence-transformers==3.0.1
+PyJWT==2.9.0
