@@ -80,7 +80,7 @@ celery.conf.update(
     imports=[
         "app.tasks",              # heartbeat
         "app.tasks_ingest",       # fetch_markets, write_markets, write_snapshots
-        "app.tasks_embedding",    # embeddings.embed_new_markets
+        "app.tasks_embeddings",   # embeddings.embed_new_markets
         "app.tasks_grouping",     # grouping.recompute_all / recompute_for_market
         "app.tasks_analysis",     # analysis.compute_opportunities   <-- added
     ],
