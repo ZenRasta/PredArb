@@ -107,7 +107,7 @@ def _stale_penalty_bps(age_sec: Optional[float]) -> float:
     steps = min(10, math.ceil((age_sec - 60) / 60.0))
     return 5.0 * steps
 
-def _effective_price(price_mid: float, size_usd: float, taker_bps: float, age_sec: Optional[float]) -> float:
+def _leg_effective_price(price_mid: float, size_usd: float, taker_bps: float, age_sec: Optional[float]) -> float:
     p = _slippage_mid_to_fill(price_mid, size_usd)
     fee = _bps_to_frac(taker_bps)
     stale = _bps_to_frac(_stale_penalty_bps(age_sec))
@@ -224,8 +224,8 @@ def _build_dutch_book(group: Dict[str, Any], fees_map: Dict[str, Dict[str, float
             # We’ll store one row per size bucket (to fit your schema: one EV per row)
             for size in size_candidates:
                 sz = min(size, float(fill_usd))
-                yes_eff = _effective_price(a["yes_mid"], sz, taker_a, age_a)
-                no_eff  = _effective_price(b["no_mid"],  sz, taker_b, age_b)
+                yes_eff = _leg_effective_price(a["yes_mid"], sz, taker_a, age_a)
+                no_eff  = _leg_effective_price(b["no_mid"],  sz, taker_b, age_b)
                 ev_usd, edge_bps = _dutch_book_ev(yes_eff, no_eff, sz)
                 if ev_usd <= 0:
                     continue
