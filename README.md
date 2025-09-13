@@ -9,6 +9,20 @@ Goal: A runnable monorepo skeleton including:
 - DigitalOcean App spec and CI stubs
 - Shared env vars and dev scripts wired
 
+Architecture
+------------
+
+See [docs/architecture.md](docs/architecture.md) for a high-level diagram.
+
+Components:
+
+- **Backend**: FastAPI service providing the API.
+- **Celery workers**: asynchronous task executors used by the backend.
+- **Supabase**: Postgres database and authentication layer.
+- **Redis**: cache and message broker connecting the backend and workers.
+- **Bot**: Telegram bot server interfacing with the backend and webapp.
+- **Webapp**: React-based Telegram WebApp frontend.
+
 Quick Start
 -----------
 
