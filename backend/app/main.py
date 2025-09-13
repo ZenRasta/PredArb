@@ -4,7 +4,7 @@ from __future__ import annotations
 from datetime import datetime, timezone
 from typing import Optional, Dict, Any, List
 
-from fastapi import FastAPI, Query, HTTPException
+from fastapi import FastAPI, Query, HTTPException, Depends
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 
@@ -13,8 +13,10 @@ from .settings import settings
 from .celery_app import celery
 from .tasks_ingest import fetch_markets, write_markets, write_snapshots
 from .tasks_analysis import compute_opportunities as compute_opps_task  # tiny API trigger target
+from .auth import router as auth_router, verify_jwt
 
 app = FastAPI(title="PredArb API", version="0.3.2")
+app.include_router(auth_router)
 
 # ------------------------------------------------------------------------------
 # CORS (dev-friendly; tighten for prod)
@@ -108,7 +110,7 @@ class OverrideIn(BaseModel):
     note: Optional[str] = None
 
 @app.post("/admin/group_override")
-def admin_group_override(payload: OverrideIn):
+def admin_group_override(payload: OverrideIn, _: Dict[str, Any] = Depends(verify_jwt)):
     """
     Add an override row. Your grouping job will apply these after scoring.
     NOTE: add auth in production (JWT role check, API key, or IP allow-list).
