@@ -83,22 +83,20 @@ def ingest(platform: str = Query(..., pattern="^(polymarket|limitless)$")):
     try:
         sig_fetch = fetch_markets.s(platform, 300)
         sig_write = write_markets.s()
-        sig_snaps = write_snapshots.s(platform, 120)
+        sig_snaps = write_snapshots.s()
         chain = (sig_fetch | sig_write | sig_snaps)
         res = chain.apply_async()
-        return {"ok": True, "task_id": res.id, "platform": platform, "mode": "celery"}
+        try:
+            result = res.get(timeout=30)
+        except Exception:
+            result = None
+        return {"ok": True, "task_id": res.id, "platform": platform, "mode": "celery", "result": result}
     except Exception:
         # Fallback: run inline without Celery/broker
         items = fetch_markets(platform, 300)
-        wm = write_markets(items)
-        ws = write_snapshots(platform, 120)
-        return {
-            "ok": True,
-            "platform": platform,
-            "write_markets": wm,
-            "write_snapshots": ws,
-            "mode": "inline",
-        }
+        items = write_markets(items)
+        result = write_snapshots(items)
+        return {"ok": True, "platform": platform, "result": result, "mode": "inline"}
 
 # ------------------------------------------------------------------------------
 # Admin override (Session 3) — protect in production!
