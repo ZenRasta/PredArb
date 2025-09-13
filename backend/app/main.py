@@ -164,6 +164,30 @@ def list_groups(
     except Exception as e:
         raise HTTPException(status_code=500, detail=f"/groups query failed: {e}")
 
+
+# ------------------------------------------------------------------------------
+# Simple market search by title
+# ------------------------------------------------------------------------------
+@app.get("/search")
+def search_markets(
+    q: str = Query(..., min_length=1, max_length=100),
+    limit: int = Query(20, ge=1, le=100),
+) -> Dict[str, Any]:
+    try:
+        if not supabase:
+            raise RuntimeError("supabase not configured")
+        res = (
+            supabase.table("markets")
+            .select("id,title,group_id")
+            .ilike("title", f"%{q}%")
+            .limit(limit)
+            .execute()
+        )
+        rows: List[Dict[str, Any]] = res.data or []
+        return {"ok": True, "count": len(rows), "items": rows, "limit": limit, "q": q}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"/search failed: {e}")
+
 # ------------------------------------------------------------------------------
 # Tiny API Trigger: run Session 4 analysis (Celery first, inline fallback)
 # ------------------------------------------------------------------------------
