@@ -237,13 +237,15 @@ def _build_dutch_book(group: Dict[str, Any], fees_map: Dict[str, Dict[str, float
                 payload = {
                     "type": "dutch_book",
                     "group_id": group["id"],
-                    "size_usd": float(sz),
                     "legs": legs,
                     "params": {"model": "default_v1"},
+                    "metrics": {
+                        "size_usd": float(sz),
+                        "ev_usd": float(ev_usd),
+                        "edge_bps": int(round(edge_bps)),
+                    },
                 }
                 payload["hash"] = _json_hash(payload)
-                payload["ev_usd"] = float(ev_usd)
-                payload["edge_bps"] = int(round(edge_bps))
                 opps.append(payload)
     return opps
 
@@ -276,11 +278,13 @@ def _build_cross_mispricing(group: Dict[str, Any], size_bucket: float = 500.0) -
             payload = {
                 "type": "cross_mispricing",
                 "group_id": group["id"],
-                "size_usd": float(size_bucket),
                 "legs": legs,
                 "params": {"reference": "group_vwap"},
-                "ev_usd": ev_usd,
-                "edge_bps": edge_bps,
+                "metrics": {
+                    "size_usd": float(size_bucket),
+                    "ev_usd": ev_usd,
+                    "edge_bps": edge_bps,
+                },
             }
             payload["hash"] = _json_hash(payload)
             out.append(payload)
@@ -297,13 +301,12 @@ def _insert_opportunity_row(row: Dict[str, Any]) -> Optional[str]:
     """
     try:
         result = supabase.table("arb_opportunities").insert({
+            "opp_hash": row["hash"],
+            "opp_type": row["type"],
             "group_id": row["group_id"],
-            "window_ts": _now_utc().isoformat(),
             "legs": row["legs"],
-            "edge_bps": int(row["edge_bps"]),
-            "ev_usd": float(row["ev_usd"]),
-            "size_usd": float(row["size_usd"]),
-            "hash": row["hash"],
+            "params": row.get("params") or {},
+            "metrics": row.get("metrics") or {},
         }).execute()
         if result.data:
             return result.data[0]["id"]
@@ -374,7 +377,7 @@ def compute_opportunities(max_groups: int = 200,
                 if arb_id:
                     inserted += 1
                     # (Optional) enable fanout once you want user alerts here
-                    # if row["ev_usd"] >= min_ev_usd_alert:
+                    # if row["metrics"]["ev_usd"] >= min_ev_usd_alert:
                     #     alerted += _fanout_alerts_for_users(arb_id, min_ev_usd_alert)
 
         if write_mispricing:
