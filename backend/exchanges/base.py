@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import os
-import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
 import redis
 import requests
+
+from app.rate_limit import token_bucket
 
 
 class BaseExchange(ABC):
@@ -33,34 +34,18 @@ class BaseExchange(ABC):
     # ------------------------------------------------------------------
     # Rate limiting helpers
     # ------------------------------------------------------------------
-    def _acquire_token(self, key: str, limit: int, period: int) -> None:
-        """Acquire a rate limit token.
+    def _acquire_token(self, key: str, limit: int, period: int, burst: int | None = None) -> None:
+        """Acquire a token for the given rate limit.
 
-        This uses a simple counter in redis with an expiry ``period``.  If the
-        counter already reached ``limit`` we sleep until the key expires and
-        retry.
+        ``limit`` requests are allowed every ``period`` seconds.  ``burst``
+        specifies the maximum bucket size; if omitted it defaults to ``limit``.
+        This method blocks until a token is available.
         """
 
         redis_key = f"rl:{self.platform}:{key}"
-        while True:
-            try:
-                with self.redis.pipeline() as pipe:
-                    pipe.watch(redis_key)
-                    current = pipe.get(redis_key)
-                    current_val = int(current) if current else 0
-                    if current_val < limit:
-                        pipe.multi()
-                        if current_val == 0:
-                            pipe.set(redis_key, 1, ex=period)
-                        else:
-                            pipe.incr(redis_key)
-                        pipe.execute()
-                        return
-                # Limit hit; wait for the key to expire
-                time.sleep(period)
-            except redis.WatchError:
-                # Retry on race conditions
-                continue
+        rate = limit / period
+        capacity = burst or limit
+        token_bucket(self.redis, redis_key, rate=rate, capacity=capacity)
 
     # ------------------------------------------------------------------
     # Interface to implement
