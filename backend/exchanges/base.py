@@ -1,12 +1,13 @@
 from __future__ import annotations
 
 import os
-import time
 from abc import ABC, abstractmethod
 from typing import Any, Dict
 
 import redis
 import requests
+
+from app import rate_limit
 
 
 class BaseExchange(ABC):
@@ -36,31 +37,15 @@ class BaseExchange(ABC):
     def _acquire_token(self, key: str, limit: int, period: int) -> None:
         """Acquire a rate limit token.
 
-        This uses a simple counter in redis with an expiry ``period``.  If the
-        counter already reached ``limit`` we sleep until the key expires and
-        retry.
+        ``limit`` specifies the maximum number of requests allowed in
+        ``period`` seconds.  The helper in :mod:`app.rate_limit` implements a
+        small token bucket which allows short bursts up to ``limit`` and then
+        refills at a steady rate.  Calls block using ``time.sleep`` until a
+        token becomes available.
         """
 
-        redis_key = f"rl:{self.platform}:{key}"
-        while True:
-            try:
-                with self.redis.pipeline() as pipe:
-                    pipe.watch(redis_key)
-                    current = pipe.get(redis_key)
-                    current_val = int(current) if current else 0
-                    if current_val < limit:
-                        pipe.multi()
-                        if current_val == 0:
-                            pipe.set(redis_key, 1, ex=period)
-                        else:
-                            pipe.incr(redis_key)
-                        pipe.execute()
-                        return
-                # Limit hit; wait for the key to expire
-                time.sleep(period)
-            except redis.WatchError:
-                # Retry on race conditions
-                continue
+        redis_key = f"{self.platform}:{key}"
+        rate_limit.acquire(self.redis, redis_key, limit=limit, period=period)
 
     # ------------------------------------------------------------------
     # Interface to implement
