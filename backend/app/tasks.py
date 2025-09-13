@@ -32,6 +32,7 @@ def _safe_import(module_path: str) -> None:
 _safe_import("tasks_ingest")       # ingest.fetch_markets/write_markets/write_snapshots
 _safe_import("tasks_embeddings")   # embeddings.embed_new_markets
 _safe_import("tasks_grouping")     # grouping.recompute_* tasks
+_safe_import("tasks_alerts")       # alerts.process_queue
 
 # Optional: make linters happy by referencing symbols if present.
 # (No runtime effect; tasks are registered by the imports above.)
@@ -45,5 +46,9 @@ except Exception:
     pass
 try:
     from .tasks_embeddings import embed_new_markets  # noqa: F401
+except Exception:
+    pass
+try:
+    from .tasks_alerts import process_alerts_queue  # noqa: F401
 except Exception:
     pass
