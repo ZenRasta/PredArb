@@ -25,6 +25,7 @@ HEARTBEAT_SEC = int(os.getenv("HEARTBEAT_SEC", "30"))
 # Analysis cadence
 ANALYSIS_COMPUTE_SEC = int(os.getenv("ANALYSIS_COMPUTE_SEC", "90"))
 ANALYSIS_MAX_GROUPS = int(os.getenv("ANALYSIS_MAX_GROUPS", "200"))
+ALERTS_POLL_SEC = int(os.getenv("ALERTS_POLL_SEC", "60"))
 
 # Tunables for batch sizes
 PM_FETCH_LIMIT = int(os.getenv("PM_FETCH_LIMIT", "300"))
@@ -66,6 +67,7 @@ celery.conf.update(
         "grouping.recompute_all": {"queue": "grouping"},
         # Analysis
         "analysis.compute_opportunities": {"queue": "analysis"},
+        "alerts.process_queue": {"queue": "alerts"},
         # Health
         "app.tasks.heartbeat": {"queue": "default"},
     },
@@ -83,6 +85,7 @@ celery.conf.update(
         "app.tasks_embeddings",   # embeddings.embed_new_markets
         "app.tasks_grouping",     # grouping.recompute_all / recompute_for_market
         "app.tasks_analysis",     # analysis.compute_opportunities   <-- added
+        "app.tasks_alerts",       # alerts.process_queue
     ],
 )
 
@@ -150,6 +153,14 @@ celery.conf.beat_schedule = {
         "schedule": ANALYSIS_COMPUTE_SEC,
         "args": (ANALYSIS_MAX_GROUPS,),
         "options": {"queue": "analysis"},
+    },
+
+    # --- Alerts ---
+    "alerts-process-queue": {
+        "task": "alerts.process_queue",
+        "schedule": ALERTS_POLL_SEC,
+        "args": (),
+        "options": {"queue": "alerts"},
     },
 
     # --- Heartbeat / health ---
