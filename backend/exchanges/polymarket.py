@@ -22,7 +22,7 @@ class PolymarketExchange(BaseExchange):
         self._acquire_token("markets", limit=5, period=1)
         resp = self.session.get(f"{self.base_url}/markets", params={"active": "true"})
         resp.raise_for_status()
-        return resp.json()
+        return resp.json().get("data", [])
 
     def fetch_orderbook_or_amm_params(self, market_id: str) -> Dict[str, Any]:
         """Fetch the orderbook for a given market."""

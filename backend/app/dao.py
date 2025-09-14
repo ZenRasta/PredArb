@@ -41,7 +41,7 @@ def upsert_markets_and_outcomes(items: List[MarketNormalized]) -> List[Tuple[Mar
     # Upsert markets and capture ids
     payload = [_mk_market_row(m) for m in items]
     # supabase-py v2: .upsert(payload, on_conflict="platform,event_id").select("id,platform,event_id")
-    res = supabase.table("markets").upsert(payload, on_conflict="platform,event_id").select("id,platform,event_id").execute()
+    res = supabase.table("markets").upsert(payload).execute()
     rows = res.data or []
     id_map: Dict[Tuple[str, str], str] = {(r["platform"], r["event_id"]): r["id"] for r in rows}
 
